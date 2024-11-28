@@ -69,6 +69,46 @@ def get_price_details_for_data_series_last_month(db_connection, data_series_ids)
         return pd.DataFrame(columns=["price_id", "change_percentage", "created_at"])
 
 
+def enrich_price_details_with_vpi(db_connection, price_details):
+    """
+    Enriches the price details DataFrame with additional information
+    from the vesper_quotations table.
+
+    Args:
+        db_connection: The database connection object to execute queries.
+        price_details (pd.DataFrame): A DataFrame containing price details with a 'price_id' column.
+
+    Returns:
+        pd.DataFrame: The enriched DataFrame with added columns from vesper_quotations.
+    """
+    if price_details.empty:
+        print("Price details DataFrame is empty.")
+        return pd.DataFrame(
+            columns=price_details.columns.tolist()
+            + ["product_id", "data_source_id", "date", "price", "currency"]
+        )
+
+    try:
+        # Extract unique price_ids from the price_details DataFrame
+        price_ids = price_details["price_id"].unique().tolist()
+        ids_str = ", ".join(map(str, price_ids))
+
+        # Query the vesper_quotations table
+        query = f"""
+        SELECT id AS price_id, product_id, data_source_id, date, price, currency
+        FROM vesper_quotations
+        WHERE id IN ({ids_str})
+        """
+        vesper_data = db_connection.query_data(query=query)
+
+        # Merge the vesper_quotations data with the price_details DataFrame
+        enriched_data = price_details.merge(vesper_data, on="price_id", how="left")
+        return enriched_data
+    except Exception as e:
+        print(f"Unexpected error while enriching price details: {e}")
+        return price_details
+
+
 if __name__ == "__main__":
     query = """SELECT user_id, data_series_id FROM user_top_data_series"""
     df = db_connection.query_data(query=query)
@@ -82,3 +122,10 @@ if __name__ == "__main__":
     )
     print(f"Price details for user {user_id} in the last month:")
     print(price_details_df)
+
+    # Enrich price details with vesper_quotations data
+    enriched_price_details = enrich_price_details_with_vpi(
+        db_connection, price_details_df
+    )
+    print(f"Enriched price details for user {user_id}:")
+    print(enriched_price_details)
