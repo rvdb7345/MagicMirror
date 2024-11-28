@@ -12,14 +12,14 @@ from helper_files.file_paths import ProjectPaths
 dotenv.load_dotenv()
 
 class MarketNewsSummary:
-    def __init__(self, user_id: int, number: int, days_threshold: int, api_key: str):
+    def __init__(self, db_connection, user_id: int, number: int, days_threshold: int, api_key: str):
         self.user_id = user_id
         self.number = number
         self.days_threshold = days_threshold
         self.api_key = os.getenv("API_KEY")
         self.client = OpenAI(api_key=api_key)
         self.username = ""
-        self.db = DBConnector(connection_name='env')
+        self.db = db_connection
         self.project_paths = ProjectPaths()
 
     def _gather_market_report_ids(self):
