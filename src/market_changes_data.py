@@ -117,7 +117,7 @@ class MarketChangesProcessor:
                 for _, row in most_recent_price.iterrows()
             ]
             
-            return json.dumps(most_recent_json, indent=4)  # Return the JSON as a formatted string
+            return most_recent_json  # Return the JSON as a formatted string
         except Exception as e:
             print(f"Unexpected error: {e}")
-            return json.dumps([])  # Return an empty JSON array in case of an error
+            return {[]}  # Return an empty JSON array in case of an error
