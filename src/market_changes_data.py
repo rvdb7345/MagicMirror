@@ -1,7 +1,6 @@
 """Should load and process the market changes data"""
 
 import pandas as pd
-from datetime import datetime, timedelta
 from helper_files.db_connector import DBConnector
 
 db_connection = DBConnector(connection_name="production")
