@@ -15,7 +15,7 @@ try:
 except Exception as e:
     raise (e)
 
-from python_helper import trace, get_project_logger, parse_config, config_mysql_ssh_args_dict
+from src.python_helper import trace, get_project_logger, parse_config, config_mysql_ssh_args_dict
 from file_paths import ProjectPaths
 
 file_paths = ProjectPaths()
