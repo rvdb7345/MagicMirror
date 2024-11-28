@@ -78,7 +78,7 @@ def get_bot_offer(price: int, strategy: str):
     FastAPI endpoint to retrieve most recent market changes data for a user.
     """
     bot = TradingBot(suggested_price=price, strategy=strategy)
-    bot_offer = asyncio.run(bot.execute_trade())
+    bot_offer = bot.execute_trade()
 
     return bot_offer
 
