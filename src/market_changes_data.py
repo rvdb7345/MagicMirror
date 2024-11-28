@@ -1,0 +1,1 @@
+"""Should load and process the market changes data"""
