@@ -18,7 +18,7 @@ async def get_counter_offer_from_api():
             )  # Extracting the counter offer price
 
 
-async def execute_trade(suggested_price, strategy, price_step, max_steps=10):
+async def execute_trade(suggested_price, strategy, price_step, max_steps=100):
     """
     Simulates the trading process asynchronously, where the bot makes an offer and reacts to the counter offer.
     """
