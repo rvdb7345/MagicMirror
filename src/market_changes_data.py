@@ -33,7 +33,7 @@ def get_user_data_series(df, user_id):
 
 if __name__ == "__main__":
     query = """SELECT user_id, data_series_id FROM user_top_data_series"""
-    df = db_connection.execute_query(query=query)
+    df = db_connection.query_data(query=query)
     user_id = 2831  # jasper
     data_series_ids = get_user_data_series(df, user_id)
     print(f"Data series for user {user_id}: {data_series_ids}")
