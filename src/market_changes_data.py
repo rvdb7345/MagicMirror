@@ -1,6 +1,7 @@
 """Should load and process the market changes data"""
 
 import pandas as pd
+from datetime import datetime, timedelta
 from helper_files.db_connector import DBConnector
 
 db_connection = DBConnector(connection_name="production")
@@ -31,9 +32,53 @@ def get_user_data_series(df, user_id):
         return []
 
 
+def get_price_details_for_data_series_last_month(db_connection, data_series_ids):
+    """
+    Fetches price IDs and change percentages from the price_changes table
+    for the given data series IDs, filtered by the last month.
+
+    Args:
+        db_connection: The database connection object to execute queries.
+        data_series_ids (list): A list of data series IDs to filter on.
+
+    Returns:
+        pd.DataFrame: A DataFrame with columns 'price_id', 'change_percentage', and 'created_at'.
+    """
+    if not data_series_ids:
+        print("No data series IDs provided.")
+        return pd.DataFrame(columns=["price_id", "change_percentage", "created_at"])
+
+    try:
+        # Calculate the start of the last month
+        start_of_last_month_str = "2024-11-01"
+        end_of_this_month_str = "2024-11-28"
+
+        # Convert the list of IDs to a comma-separated string for the SQL query
+        ids_str = ", ".join(map(str, data_series_ids))
+        query = f"""
+        SELECT price_id, change_percentage, created_at
+        FROM price_changes
+        WHERE data_series_id IN ({ids_str})
+          AND created_at >= '{start_of_last_month_str}'
+          AND created_at < '{end_of_this_month_str}'
+        """
+        # Execute the query and fetch results into a DataFrame
+        return db_connection.query_data(query=query)
+    except Exception as e:
+        print(f"Unexpected error while fetching price details: {e}")
+        return pd.DataFrame(columns=["price_id", "change_percentage", "created_at"])
+
+
 if __name__ == "__main__":
     query = """SELECT user_id, data_series_id FROM user_top_data_series"""
     df = db_connection.query_data(query=query)
     user_id = 2831  # jasper
     data_series_ids = get_user_data_series(df, user_id)
     print(f"Data series for user {user_id}: {data_series_ids}")
+
+    # Map data series IDs to price details for the last month
+    price_details_df = get_price_details_for_data_series_last_month(
+        db_connection, data_series_ids
+    )
+    print(f"Price details for user {user_id} in the last month:")
+    print(price_details_df)
