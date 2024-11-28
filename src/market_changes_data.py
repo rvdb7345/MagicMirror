@@ -27,7 +27,7 @@ class MarketChangesProcessor:
         """
         if not data_series_ids:
             print("No data series IDs provided.")
-            return pd.DataFrame(columns=["price_id", "change_percentage", "created_at"])
+            return pd.DataFrame(columns=["price_id", "change_percentage", "created_at", "product_id", "date", "price", "currency"])
 
         try:
             start_of_last_month_str = "2024-11-01"
@@ -43,7 +43,7 @@ class MarketChangesProcessor:
             return self.db_connection.query_data(query=query)
         except Exception as e:
             print(f"Unexpected error while fetching price details: {e}")
-            return pd.DataFrame(columns=["price_id", "change_percentage", "created_at"])
+            return pd.DataFrame(columns=["price_id", "change_percentage", "created_at", "product_id", "date", "price", "currency"])
 
     def enrich_price_details_with_vpi(self, price_details):
         """
@@ -75,7 +75,7 @@ class MarketChangesProcessor:
 
     def get_full_market_changes_info(self, user_id: int):
         """
-        Retrieves the full market changes information for a given user.
+        Retrieves the most recent market change information for a given user.
         """
         try:
             # Query the user_top_data_series table to get the user's data series
@@ -88,7 +88,7 @@ class MarketChangesProcessor:
 
             if not data_series_ids:
                 print(f"No data series found for user {user_id}.")
-                return pd.DataFrame()
+                return []
 
             # Fetch price details for the last month
             price_details_df = self.get_price_details_for_data_series_last_month(data_series_ids)
@@ -100,7 +100,18 @@ class MarketChangesProcessor:
             print(f"Enriched price details for user {user_id}:")
             print(enriched_price_details)
 
-            return enriched_price_details
+            # Filter the most recent record per product_id
+            recent_price_details = enriched_price_details.sort_values(by=["product_id", "created_at"], ascending=[True, False])
+            most_recent_price = recent_price_details.drop_duplicates(subset="product_id", keep="first")
+
+            # Convert the most recent price record for each product into tuples (product_id, price, change_percentage, date)
+            most_recent_tuples = [
+                (row["product_id"], row["price"], row["change_percentage"], row["date"])
+                for _, row in most_recent_price.iterrows()
+            ]
+            
+            return most_recent_tuples
         except Exception as e:
             print(f"Unexpected error: {e}")
-            return pd.DataFrame()
+            return []
+

@@ -48,21 +48,21 @@ def get_full_information(product_id: int, data_source_id: int):
     # Convert DataFrame to a list of dictionaries for API response
     return full_info.to_dict(orient="records")
 
+
 @app.get("/get-market-changes")
 def get_market_changes(user_id: int):
     """
-    FastAPI endpoint to retrieve full market changes data for a user.
+    FastAPI endpoint to retrieve most recent market changes data for a user.
     """
     market_changes_processor = MarketChangesProcessor(db_connection=db_connection)
 
-    # Retrieve the enriched market changes info using the class
+    # Retrieve the most recent market changes info using the class
     market_changes_info = market_changes_processor.get_full_market_changes_info(user_id)
 
-    if market_changes_info.empty:
+    if not market_changes_info:
         return {"error": "No market changes found for the given user."}
 
-    # Convert DataFrame to a list of dictionaries for API response
-    return market_changes_info.to_dict(orient="records")
+    return market_changes_info
 
 
 
