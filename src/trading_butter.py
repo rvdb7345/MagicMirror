@@ -45,12 +45,6 @@ async def execute_trade(
 
         print(f"Counter offer: {counter_offer}")
 
-        # Check if the counter offer is close enough to the bot's offer
-        # The user can decide whether to accept based on the threshold.
-        if abs(bot_offer - counter_offer) <= bot_offer * acceptance_threshold:
-            print(f"User can accept the counter offer of {counter_offer}.")
-            # The bot will just print the result, and the user decides to accept or not.
-
         # Adjust the bot's offer based on the strategy
         if strategy == "aggressive":
             bot_offer += price_step  # Increase offer in larger steps
@@ -58,13 +52,6 @@ async def execute_trade(
             bot_offer += price_step / 2  # Moderate increase in offer
         elif strategy == "conservative":
             bot_offer += price_step / 4  # Small increase in offer
-
-        # Prevent price from going too high (stop if the price is too far above the suggested price)
-        if (
-            bot_offer > suggested_price * 1.2
-        ):  # 20% higher than the original suggested price
-            print("Trade failed: Price is too high.")
-            return "Trade failed"
 
         step_count += 1
         await asyncio.sleep(1)  # Simulate a slight delay before the next offer
