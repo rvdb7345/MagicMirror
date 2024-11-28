@@ -9,9 +9,20 @@ from helper_files.db_connector import DBConnector
 from market_changes_data import MarketChangesProcessor
 from textual_data import MarketNewsSummary
 from vpi_data import VesperDataProcessor
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 
+origins = ['http://localhost:3000','*']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize the VesperDataProcessor with a DB connection
 db_connection = DBConnector(connection_name="env")
@@ -63,6 +74,8 @@ def get_market_changes(user_id: int):
         return {"error": "No market changes found for the given user."}
 
     return market_changes_info
+
+
 
 
 
