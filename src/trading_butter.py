@@ -7,9 +7,6 @@ class TradingBot:
         self,
         suggested_price: float,
         strategy: str,
-        price_step: float,
-        max_steps: int = 100,
-        acceptance_threshold: float = 0.02,
     ):
         """
         Initializes the trading bot with necessary parameters.
@@ -17,15 +14,9 @@ class TradingBot:
         Args:
             suggested_price (float): The initial suggested price for the butter.
             strategy (str): The trading strategy ("aggressive", "neutral", "conservative").
-            price_step (float): The amount by which the bot adjusts its offer each time.
-            max_steps (int): The maximum number of steps the bot will take.
-            acceptance_threshold (float): The threshold (percentage) at which the user might accept the counter offer.
         """
         self.suggested_price = suggested_price
         self.strategy = strategy
-        self.price_step = price_step
-        self.max_steps = max_steps
-        self.acceptance_threshold = acceptance_threshold
         self.bot_offer = suggested_price  # Start with the suggested price
 
     async def get_counter_offer_from_api(self):
@@ -100,12 +91,9 @@ if __name__ == "__main__":
         7500.0  # Example starting price (from frontend, as calculated earlier)
     )
     strategy = "neutral"  # Example strategy (from frontend)
-    price_step = 50  # Example price step (from frontend)
 
     # Create an instance of the TradingBot class
-    bot = TradingBot(
-        suggested_price=suggested_price, strategy=strategy, price_step=price_step
-    )
+    bot = TradingBot(suggested_price=suggested_price, strategy=strategy)
 
     # Run the asynchronous trade simulation
     asyncio.run(bot.execute_trade())
