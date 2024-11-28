@@ -44,10 +44,9 @@ def suggest_selling_price(
         # Market is bearish, adjust price downwards
         suggested_price -= suggested_price * 0.05  # Decrease price by 5%
 
-    # Adjust based on the forecast (if forecast is higher, we may hold)
-    if butter_forecast_value > butter_price:
-        # The forecast suggests higher prices, so we may want to hold
-        suggested_price = max(suggested_price, butter_price)
+    # Adjustment based on forecast: Use the midpoint between the current butter price and the forecasted value
+    price_midpoint = (butter_price + butter_forecast_value) / 2
+    suggested_price = min(suggested_price, price_midpoint)
 
     # Ensure the suggested price does not exceed the forecasted value by too much
     suggested_price = min(suggested_price, butter_forecast_value)
