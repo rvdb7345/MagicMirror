@@ -66,36 +66,69 @@ class MarketNewsSummary:
         query = f"SELECT title, content FROM news WHERE id IN ({', '.join(map(str, ids))})"
         return self.db.query_data(query)
 
-    def _generate_highlights_summary(self, market_reports_df: pd.DataFrame, news_articles_df: pd.DataFrame) -> str:
+    def _generate_highlights_summary(self, market_reports_df: pd.DataFrame, news_articles_df: pd.DataFrame) -> list:
+        """
+        Generates a summary in JSON format where each item is a dictionary containing title, content, 
+        and a possible market effect indicator (emoji).
+        """
         combined_df = pd.concat([market_reports_df, news_articles_df], ignore_index=True)
+
+        # Prepare the content to be passed to ChatGPT
         combined_text = "\n\n".join([f"Title: {row['title']}\nContent: {row['content']}" for _, row in combined_df.iterrows()])
+        
         prompt = f"""
-        Provide a diverse summary of the following news and market events that happened during the last week. 
-        Highlight key points from the market reports, and also give an overview of the major news topics.
-        Stick to approximately 5 bullet points. Focus on the dairy market. It should be suitable for a short presentation.
-        Put upward graph emojis in front of news that would push the price up, and downward graph emojis in front of news that would push the price down.
-        And a neutral emoji in front of news that would not have a significant impact on the price.
-        Format the response in HTML, using headings and bullet points where appropriate for clarity.
+        You are an assistant that summarizes market and news reports related to the dairy market. 
+        Summarize the following articles into a JSON list. Each item in the JSON should contain the following fields:
+        
+        - "title": The title of the article.
+        - "content": The content of the article.
+        - "market_effect": An emoji that represents the potential market effect (upward 📈, downward 📉, or neutral 🟢). 
+        If the content suggests an increase in prices, use 📈; if it suggests a decrease, use 📉; otherwise, use 🟢.
+
+        Do not return HTML or bullet points. The output should be a JSON array where each object represents an article in the format:
+        
+        [
+            {{
+                "title": "Title of the article",
+                "content": "Content of the article",
+                "market_effect": "📈"
+            }},
+            ...
+        ]
+        
+        Here is the content of the articles:
         {combined_text}
         """
 
+        # Call OpenAI's API to generate the summary in the correct format
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "system", "content": prompt}, {"role": "user", "content": combined_text}],
             temperature=1,
-            max_tokens=1024,
+            max_tokens=2000,
             top_p=1
         )
-        html_content = response.choices[0].message.content.strip()
-        return html_content
+        
+        print(response.choices[0].message.content.strip())
+        
+        # Parse the response as JSON and return
+        try:
+            summary_json = json.loads(response.choices[0].message.content.strip())
+            return summary_json
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON response: {e}")
+            return []
 
     def generate_summary(self):
+        # Gather market reports and news
         market_report_ids = self._gather_market_report_ids()
         market_reports_df = self._gather_market_report_content_from_ids(market_report_ids)
         news_ids = self._gather_news_ids()
         news_articles_df = self._gather_news_content_from_ids(news_ids)
 
+        # Generate and return the JSON summary
         return self._generate_highlights_summary(market_reports_df, news_articles_df)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

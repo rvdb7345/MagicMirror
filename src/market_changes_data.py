@@ -1,5 +1,6 @@
 import pandas as pd
 from helper_files.db_connector import DBConnector
+import json
 
 class MarketChangesProcessor:
     def __init__(self, db_connection: DBConnector):
@@ -75,7 +76,7 @@ class MarketChangesProcessor:
 
     def get_full_market_changes_info(self, user_id: int):
         """
-        Retrieves the most recent market change information for a given user.
+        Retrieves the most recent market change information for a given user and returns it in JSON format.
         """
         try:
             # Query the user_top_data_series table to get the user's data series
@@ -104,14 +105,19 @@ class MarketChangesProcessor:
             recent_price_details = enriched_price_details.sort_values(by=["product_id", "created_at"], ascending=[True, False])
             most_recent_price = recent_price_details.drop_duplicates(subset="product_id", keep="first")
 
-            # Convert the most recent price record for each product into tuples (product_id, price, change_percentage, date)
-            most_recent_tuples = [
-                (row["product_id"], row["price"], row["change_percentage"], row["date"])
+            # Convert the most recent price record for each product into a JSON object
+            most_recent_json = [
+                {
+                    "product_id": row["product_id"],
+                    "price": row["price"],
+                    "change_percentage": row["change_percentage"],
+                    "date": row["date"].strftime('%Y-%m-%d'),  # Format the date as a string
+                    "currency": row["currency"]
+                }
                 for _, row in most_recent_price.iterrows()
             ]
             
-            return most_recent_tuples
+            return json.dumps(most_recent_json, indent=4)  # Return the JSON as a formatted string
         except Exception as e:
             print(f"Unexpected error: {e}")
-            return []
-
+            return json.dumps([])  # Return an empty JSON array in case of an error
