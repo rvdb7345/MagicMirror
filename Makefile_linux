@@ -1,0 +1,150 @@
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# This Makefile helps you to set up your local development
+# environment according to our standards.
+#
+# Key commands:
+# `make help` - use this to list all the possible commands
+# `make setup` - sets up your
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+# Export all variables to child processes
+.EXPORT_ALL_VARIABLES:
+
+.DEFAULT_GOAL := help
+PYTHON_VERSION := 3.10
+POETRY := poetry
+VENV_PATH = .venv
+LOCAL_PRE_COMMIT = $(VENV_PATH)/bin/pre-commit
+PYTHON_BIN := python$(PYTHON_VERSION)
+DOWNLOAD_DIR := $(HOME)/python-install
+INSTALL_PREFIX := $(HOME)/.local
+
+# .PHONY: install clean lint format
+
+.PHONY: help
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Targets:"
+	@echo "  setup      Set up the virtual environment and install dependencies"
+	@echo "  venv       Create the virtual environment"
+	@echo "  install    Install project dependencies"
+	@echo "  clean      Clean up the virtual environment and generated files"
+	@echo "  help       Show this help message"
+
+
+.PHONY: setup
+setup: venv install pre-commit
+
+.PHONY: install-build-tools
+install-build-tools:
+	@echo "Installing required build tools..."
+	@sudo apt-get update && sudo apt-get install -y \
+		build-essential \
+		libssl-dev \
+		zlib1g-dev \
+		libncurses5-dev \
+		libbz2-dev \
+		libreadline-dev \
+		libsqlite3-dev \
+		wget \
+		libffi-dev \
+		liblzma-dev \
+		libgdbm-dev \
+		libnss3-dev \
+		libgdbm-compat-dev \
+		redis-server
+
+.PHONY: venv
+venv: install-build-tools
+	@echo "Checking for Python $(PYTHON_VERSION)..."
+	@if ! command -v $(PYTHON_BIN) >/dev/null 2>&1; then \
+		echo "Python $(PYTHON_VERSION) not found, installing..."; \
+		mkdir -p $(DOWNLOAD_DIR) && \
+		cd $(DOWNLOAD_DIR) && \
+		wget https://www.python.org/ftp/python/3.10.12/Python-3.10.12.tgz && \
+		tar xzf Python-3.10.12.tgz && \
+		cd Python-3.10.12 && \
+		./configure --enable-optimizations --prefix=$(INSTALL_PREFIX) && \
+		make altinstall && \
+		ln -sf $(INSTALL_PREFIX)/bin/python3.10 $(INSTALL_PREFIX)/bin/python$(PYTHON_VERSION); \
+		echo "Python $(PYTHON_VERSION) installed."; \
+	else \
+		echo "Python $(PYTHON_VERSION) found."; \
+	fi
+	@echo "Creating virtual environment..."
+	@$(INSTALL_PREFIX)/bin/python3.10 -m venv $(VENV_PATH)
+	@echo "Virtual environment created."
+
+.PHONY: install
+install:
+	@echo "Activating the virtual environment..."
+	. $(VENV_PATH)/bin/activate && \
+	echo "PIP3 installing Poetry..." && \
+	$(VENV_PATH)/bin/python3.10 -m pip install $(POETRY) && \
+	echo "Using the virtual environment..." && \
+	$(VENV_PATH)/bin/poetry env use $(VENV_PATH)/bin/$(PYTHON_BIN) && \
+	echo "Installing dependencies..." && \
+	$(VENV_PATH)/bin/poetry install --no-root && \
+	echo "Dependencies installed."
+
+.PHONY: pre-commit
+pre-commit: ${LOCAL_PRE_COMMIT}
+	@echo "Setting up pre-commit..."
+	@$(LOCAL_PRE_COMMIT) install
+	@$(LOCAL_PRE_COMMIT) autoupdate
+
+## Delete all temporary files
+.PHONY: clean
+clean:
+	@echo "Cleaning cache files..."
+	@rm -rf .ipynb_checkpoints
+	@rm -rf **/.ipynb_checkpoints
+	@rm -rf .pytest_cache
+	@rm -rf **/.pytest_cache
+	@rm -rf __pycache__
+	@rm -rf **/__pycache__
+	@rm -rf build
+	@rm -rf dist
+	@echo "Cleaning virtual environment..."
+	@rm -rf $(VENV_PATH)
+
+
+## Run checks (ruff + black + docformatter + mypy + bandit)
+.PHONY: check
+check:
+	@echo "Running Ruff linter..."
+	@ruff check .
+	@echo "Running Black formatter..."
+	@black --check .
+	@echo "Running Docstring formatter..."
+	@docformatter -r .
+	@echo "Running mypy type checker..."
+	@mypy .
+	@echo "Running bandit security check (High risk, High confidence)..."
+	@bandit -r src/ -lllŸ
+	@bandit -r test/ -lll
+
+## Format files (ruff + black + docformatter)
+.PHONY: format
+format:
+	@echo "NOTE: THIS COMMAND SKIPS mypy AND bandit CHECKS. MAKE SURE TO RUN `make check` FOR A COMPLETE CHECK!"
+	@echo "Running Ruff linter..."
+	ruff . --fix
+	@echo "Running Black formatter..."
+	black .
+	@echo "Running Docstring formatter..."
+	docformatter --in-place -r .
+
+
+## Run tests
+.PHONY: test
+test:
+	pytest --cov=src --cov-report xml --log-level=WARNING --disable-pytest-warnings
+
+
+
+## Update poetry lock file using the latest pyproject.tomlŸ
+.PHONY: lock-poetry
+lock-poetry:
+	@$(POETRY) lock --no-update
