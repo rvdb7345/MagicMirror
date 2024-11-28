@@ -1,4 +1,6 @@
 """The api endpoints that can be used to retrieve data"""
+
+import asyncio
 from typing import List
 from fastapi import FastAPI
 import os
@@ -10,7 +12,7 @@ from market_changes_data import MarketChangesProcessor
 from textual_data import MarketNewsSummary
 from vpi_data import VesperDataProcessor
 from fastapi.middleware.cors import CORSMiddleware
-
+from trading_butter import TradingBot
 
 app = FastAPI()
 
@@ -28,18 +30,22 @@ app.add_middleware(
 db_connection = DBConnector(connection_name="env")
 vesper_processor = VesperDataProcessor(db_connection=db_connection)
 
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, World!"}
 
+
 @app.get("/generate-summary")
 def generate_summary(user_id: int, number: int, days_threshold: int):
     # Initialize the MarketNewsSummary class
-    market_news = MarketNewsSummary(db_connection, user_id, number, days_threshold, os.getenv("OPENAI_API_KEY"))
-    
+    market_news = MarketNewsSummary(
+        db_connection, user_id, number, days_threshold, os.getenv("OPENAI_API_KEY")
+    )
+
     # Generate the HTML summary
     html_summary = market_news.generate_summary()
-    
+
     # Return the summary
     return {"html_summary": html_summary}
 
@@ -75,6 +81,16 @@ def get_market_changes(user_id: int):
 
     return market_changes_info
 
+
+@app.get("/get-bot-offer")
+def get_bot_offer(price: int, strategy: str):
+    """
+    FastAPI endpoint to retrieve most recent market changes data for a user.
+    """
+    bot = TradingBot(suggested_price=price, strategy=strategy)
+    bot_offer = bot.execute_trade()
+
+    return bot_offer
 
 
 
