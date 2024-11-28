@@ -15,7 +15,7 @@ try:
 except Exception as e:
     raise (e)
 
-from python_helper import (
+from helper_files.python_helper import (
     trace,
     get_project_logger,
     parse_config,

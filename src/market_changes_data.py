@@ -1,5 +1,10 @@
 """Should load and process the market changes data"""
 
+import pandas as pd
+from helper_files.db_connector import DBConnector
+
+db_connection = DBConnector(connection_name="production")
+
 
 def get_user_data_series(df, user_id):
     """
