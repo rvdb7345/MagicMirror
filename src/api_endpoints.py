@@ -1,7 +1,9 @@
 """The api endpoints that can be used to retrieve data"""
 
 import asyncio
+import json
 from typing import List
+import dotenv
 from fastapi import FastAPI
 import os
 from pydantic import BaseModel
@@ -17,7 +19,7 @@ from trading_butter import TradingBot
 
 app = FastAPI()
 
-origins = ['http://localhost:3000','*']
+origins = ["http://localhost:3000", "*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +32,11 @@ app.add_middleware(
 # Initialize the VesperDataProcessor with a DB connection
 db_connection = DBConnector(connection_name="env")
 vesper_processor = VesperDataProcessor(db_connection=db_connection)
+# vp_data = vesper_processor.get_full_information(product_id=2, data_source_id=52)
+# market_changes_processor = MarketChangesProcessor(db_connection=db_connection)
+
+# # Retrieve the most recent market changes info using the class
+# market_changes_info = market_changes_processor.get_full_market_changes_info(2831)
 
 
 @app.get("/")
@@ -84,19 +91,24 @@ def get_market_changes(user_id: int):
 
 
 @app.get("/suggest-price")
-def suggest_price(data):
+def suggest_price(user_id):
     """
     FastAPI endpoint to retrieve most recent market changes data for a user.
     """
+    # get butter price and forecast
+    df = vesper_processor.get_full_information(product_id=2, data_source_id=52)
+    # get market changes
+    market_changes = json.loads(get_market_changes(user_id))
+    # create data object
     price_suggester = PriceSuggestion(
         median_listing_price=data["Median Listing Price"],
         median_first_counter_bid=data["Median First COUNTER_BID"],
         average_deal_price=data["Average Deal Price"],
         avg_step_change_counter_offers=data["Average Step Change for COUNTER_OFFERs"],
         avg_step_change_counter_bids=data["Average Step Change for COUNTER_BIDs"],
-        butter_price=butter_price,
-        price_change_percentage_last_month=price_change_percentage_last_month,
-        butter_forecast_value=butter_forecast_value,
+        butter_price=df["price"][0],
+        price_change_percentage_last_month=market_changes,
+        butter_forecast_value=df["value"][0],
     )
     suggested_price = price_suggester.suggest_selling_price()
 
@@ -104,16 +116,14 @@ def suggest_price(data):
 
 
 @app.get("/get-bot-offer")
-def get_bot_offer(price: int, strategy: str):
+def get_bot_offer(price: int, min_price: int, strategy: str):
     """
     FastAPI endpoint to retrieve most recent market changes data for a user.
     """
-    bot = TradingBot(suggested_price=price, strategy=strategy)
-    bot_offer = bot.execute_trade()
+    bot = TradingBot(suggested_price=price, min_price=min_price, strategy=strategy)
+    bot_offer = bot.make_offer()
 
     return {"bot_offer": bot_offer}
-
-
 
 
 if __name__ == "__main__":
