@@ -9,6 +9,7 @@ import uvicorn
 
 from helper_files.db_connector import DBConnector
 from market_changes_data import MarketChangesProcessor
+from suggest_price import PriceSuggestion
 from textual_data import MarketNewsSummary
 from vpi_data import VesperDataProcessor
 from trading_butter import TradingBot
@@ -72,6 +73,26 @@ def get_market_changes(user_id: int):
     return market_changes_info
 
 
+@app.get("/suggest-price")
+def suggest_price(data):
+    """
+    FastAPI endpoint to retrieve most recent market changes data for a user.
+    """
+    price_suggester = PriceSuggestion(
+        median_listing_price=data["Median Listing Price"],
+        median_first_counter_bid=data["Median First COUNTER_BID"],
+        average_deal_price=data["Average Deal Price"],
+        avg_step_change_counter_offers=data["Average Step Change for COUNTER_OFFERs"],
+        avg_step_change_counter_bids=data["Average Step Change for COUNTER_BIDs"],
+        butter_price=butter_price,
+        price_change_percentage_last_month=price_change_percentage_last_month,
+        butter_forecast_value=butter_forecast_value,
+    )
+    suggested_price = price_suggester.suggest_selling_price()
+
+    return {"suggested_price": suggested_price}
+
+
 @app.get("/get-bot-offer")
 def get_bot_offer(price: int, strategy: str):
     """
@@ -80,7 +101,7 @@ def get_bot_offer(price: int, strategy: str):
     bot = TradingBot(suggested_price=price, strategy=strategy)
     bot_offer = bot.execute_trade()
 
-    return bot_offer
+    return {"bot_offer": bot_offer}
 
 
 if __name__ == "__main__":
