@@ -12,10 +12,20 @@ from market_changes_data import MarketChangesProcessor
 from suggest_price import PriceSuggestion
 from textual_data import MarketNewsSummary
 from vpi_data import VesperDataProcessor
+from fastapi.middleware.cors import CORSMiddleware
 from trading_butter import TradingBot
 
 app = FastAPI()
 
+origins = ['http://localhost:3000','*']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize the VesperDataProcessor with a DB connection
 db_connection = DBConnector(connection_name="env")
@@ -41,7 +51,7 @@ def generate_summary(user_id: int, number: int, days_threshold: int):
     return {"html_summary": html_summary}
 
 
-@app.get("/get-full-information")
+@app.get("/get-butter-vpi-information")
 def get_full_information(product_id: int, data_source_id: int):
     """
     FastAPI endpoint that retrieves full information by calling the `VesperDataProcessor`.
@@ -104,5 +114,7 @@ def get_bot_offer(price: int, strategy: str):
     return {"bot_offer": bot_offer}
 
 
+
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
