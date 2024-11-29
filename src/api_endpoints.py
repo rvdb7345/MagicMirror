@@ -90,24 +90,18 @@ def get_market_changes(user_id: int):
 
 
 @app.get("/suggest-price")
-def suggest_price(user_id):
+def suggest_price():
     """
     FastAPI endpoint to retrieve most recent market changes data for a user.
     """
-    # get butter price and forecast
-    df = vesper_processor.get_full_information(product_id=2, data_source_id=52)
-    # get market changes
-    market_changes = json.loads(get_market_changes(user_id))
-    # create data object
     price_suggester = PriceSuggestion(
-        median_listing_price=data["Median Listing Price"],
-        median_first_counter_bid=data["Median First COUNTER_BID"],
-        average_deal_price=data["Average Deal Price"],
-        avg_step_change_counter_offers=data["Average Step Change for COUNTER_OFFERs"],
-        avg_step_change_counter_bids=data["Average Step Change for COUNTER_BIDs"],
-        butter_price=df["price"][0],
-        price_change_percentage_last_month=market_changes,
-        butter_forecast_value=df["value"][0],
+        median_listing_price=7400,
+        median_first_counter_bid=7350,
+        average_deal_price=7420,
+        avg_step_change_counter_offers=2.5,
+        avg_step_change_counter_bids=4,
+        butter_price=7600,
+        butter_forecast_value=7498.04,
     )
     suggested_price = price_suggester.suggest_selling_price()
 

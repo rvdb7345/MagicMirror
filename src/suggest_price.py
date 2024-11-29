@@ -10,7 +10,7 @@ class PriceSuggestion:
         avg_step_change_counter_offers: float,
         avg_step_change_counter_bids: float,
         butter_price: float,
-        price_change_percentage_last_month: float,
+        # price_change_percentage_last_month: float,
         butter_forecast_value: float,
     ):
         """
@@ -32,7 +32,6 @@ class PriceSuggestion:
         self.avg_step_change_counter_offers = avg_step_change_counter_offers
         self.avg_step_change_counter_bids = avg_step_change_counter_bids
         self.butter_price = butter_price
-        self.price_change_percentage_last_month = price_change_percentage_last_month
         self.butter_forecast_value = butter_forecast_value
 
     def suggest_selling_price(self) -> float:
@@ -54,14 +53,6 @@ class PriceSuggestion:
 
         # Ensure the suggested price is not too far from the initial counter offer
         suggested_price = max(self.median_first_counter_bid, suggested_price)
-
-        # Adjust based on market trend (price change percentage last month)
-        if self.price_change_percentage_last_month > 0:
-            # Market is bullish, so we could adjust the suggested price upwards
-            suggested_price += suggested_price * 0.05  # Increase price by 5%
-        elif self.price_change_percentage_last_month < 0:
-            # Market is bearish, adjust price downwards
-            suggested_price -= suggested_price * 0.05  # Decrease price by 5%
 
         # Adjust based on the forecast (if forecast is higher, we may hold)
         if self.butter_forecast_value > self.butter_price:
@@ -124,21 +115,19 @@ market_data = [
 ]
 
 # Static market values
-butter_price = 7500
+butter_price = 7600
 price_change_percentage_last_month = 2.0
-butter_forecast_value = 7550
+butter_forecast_value = 7498.04
 
-# Running the suggestion for each market data point
-for data in market_data:
-    price_suggester = PriceSuggestion(
-        median_listing_price=data["Median Listing Price"],
-        median_first_counter_bid=data["Median First COUNTER_BID"],
-        average_deal_price=data["Average Deal Price"],
-        avg_step_change_counter_offers=data["Average Step Change for COUNTER_OFFERs"],
-        avg_step_change_counter_bids=data["Average Step Change for COUNTER_BIDs"],
-        butter_price=butter_price,
-        price_change_percentage_last_month=price_change_percentage_last_month,
-        butter_forecast_value=butter_forecast_value,
-    )
-    suggested_price = price_suggester.suggest_selling_price()
-    print(f"Suggested selling price for {data['Market Date']}: {suggested_price}")
+
+price_suggester = PriceSuggestion(
+    median_listing_price=7400,
+    median_first_counter_bid=7350,
+    average_deal_price=7420,
+    avg_step_change_counter_offers=2.5,
+    avg_step_change_counter_bids=4,
+    butter_price=7600,
+    butter_forecast_value=7498.04,
+)
+suggested_price = price_suggester.suggest_selling_price()
+print(f"Suggested selling price: {suggested_price}")
