@@ -1,3 +1,4 @@
+import functools
 import os
 import base64
 import json
@@ -8,14 +9,29 @@ import pandas as pd
 from openai import OpenAI
 from helper_files.db_connector import DBConnector
 from helper_files.file_paths import ProjectPaths
+import functools
+import weakref
 
+def memoized_method(*lru_args, **lru_kwargs):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped_func(self, *args, **kwargs):
+            # We're storing the wrapped method inside the instance. If we had
+            # a strong reference to self the instance would never die.
+            self_weak = weakref.ref(self)
+            @functools.wraps(func)
+            @functools.lru_cache(*lru_args, **lru_kwargs)
+            def cached_method(*args, **kwargs):
+                return func(self_weak(), *args, **kwargs)
+            setattr(self, func.__name__, cached_method)
+            return cached_method(*args, **kwargs)
+        return wrapped_func
+    return decorator
 dotenv.load_dotenv()
 
 class MarketNewsSummary:
-    def __init__(self, db_connection, user_id: int, number: int, days_threshold: int, api_key: str):
-        self.user_id = user_id
-        self.number = number
-        self.days_threshold = days_threshold
+    def __init__(self, db_connection, api_key: str):
+
         self.api_key = os.getenv("API_KEY")
         self.client = OpenAI(api_key=api_key)
         self.username = ""
@@ -119,7 +135,13 @@ class MarketNewsSummary:
             print(f"Error parsing JSON response: {e}")
             return []
 
-    def generate_summary(self):
+    @memoized_method()
+    def generate_summary(self, user_id, number, days_threshold):
+        
+        self.user_id = user_id
+        self.number = number
+        self.days_threshold = days_threshold
+        
         # Gather market reports and news
         market_report_ids = self._gather_market_report_ids()
         market_reports_df = self._gather_market_report_content_from_ids(market_report_ids)
