@@ -109,11 +109,16 @@ def suggest_price():
 
 
 @app.get("/get-bot-offer")
-def get_bot_offer(price: int, min_price: int, strategy: str):
+def get_bot_offer(price: float, min_price: float, strategy: str, counter_offer: float):
     """
     FastAPI endpoint to retrieve most recent market changes data for a user.
     """
-    bot = TradingBot(suggested_price=price, min_price=min_price, strategy=strategy)
+    bot = TradingBot(
+        suggested_price=price,
+        min_price=min_price,
+        strategy=strategy,
+        counter_offer=counter_offer,
+    )
     bot_offer = bot.make_offer()
 
     return {"bot_offer": bot_offer}

@@ -46,7 +46,13 @@ MARKET_DATA = [
 
 
 class TradingBot:
-    def __init__(self, suggested_price: float, min_price: float, strategy: str):
+    def __init__(
+        self,
+        suggested_price: float,
+        min_price: float,
+        strategy: str,
+        counter_offer: float,
+    ):
         """
         Initializes the trading bot with necessary parameters.
 
@@ -58,6 +64,7 @@ class TradingBot:
         self.min_price = min_price
         self.strategy = strategy
         self.bot_offer = suggested_price  # Start with the suggested price
+        self.counter_offer = counter_offer
 
         # Calculate the price_step based on historical market data
         self.price_step = self.calculate_price_step(market_data=MARKET_DATA)
@@ -85,22 +92,7 @@ class TradingBot:
 
         return price_step
 
-    async def get_counter_offer_from_api(self):
-        """
-        Asynchronously gets the counter offer from an external API.
-        Replace this with the actual API request you're using to receive counter offers.
-        """
-        # Simulating an asynchronous API request (replace with your API logic)
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://example.com/get_counter_offer") as response:
-                counter_offer = (
-                    await response.json()
-                )  # Assuming the counter offer comes as JSON
-                return float(
-                    counter_offer["counter_offer"]
-                )  # Extracting the counter offer price
-
-    async def make_offer(self):
+    def make_offer(self):
         """
         Simulates the process of the bot making offers.
         The bot adjusts its offer according to the strategy and sends it to the front-end.
@@ -110,7 +102,7 @@ class TradingBot:
         print(f"Bot's offer: {self.bot_offer} (Step {step_count + 1})")
 
         # Simulate receiving a counter offer (this will come from the buyer)
-        counter_offer = await self.get_counter_offer_from_api()
+        counter_offer = self.counter_offer
         # counter_offer = 7430  # Simulating a counter offer
         print(f"Counter offer: {counter_offer}")
 
@@ -141,7 +133,6 @@ class TradingBot:
             return "Bot's offer is too high, stopping further offers."
 
         step_count += 1
-        await asyncio.sleep(1)  # Simulate a slight delay before the next offer
         return self.bot_offer
 
 
