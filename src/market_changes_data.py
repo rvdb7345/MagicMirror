@@ -62,9 +62,10 @@ class MarketChangesProcessor:
             ids_str = ", ".join(map(str, price_ids))
 
             query = f"""
-            SELECT id AS price_id, product_id, data_source_id, date, price, currency
-            FROM vesper_quotations
-            WHERE id IN ({ids_str})
+            SELECT vq.id AS price_id, products.name as product_name, vq.data_source_id, vq.date, vq.price, vq.currency
+            FROM vesper_quotations vq
+            LEFT JOIN products on products.id = vq.product_id
+            WHERE vq.id IN ({ids_str})
             """
             vesper_data = self.db_connection.query_data(query=query)
 
@@ -102,13 +103,13 @@ class MarketChangesProcessor:
             print(enriched_price_details)
 
             # Filter the most recent record per product_id
-            recent_price_details = enriched_price_details.sort_values(by=["product_id", "created_at"], ascending=[True, False])
-            most_recent_price = recent_price_details.drop_duplicates(subset="product_id", keep="first")
+            recent_price_details = enriched_price_details.sort_values(by=["product_name", "created_at"], ascending=[True, False])
+            most_recent_price = recent_price_details.drop_duplicates(subset="product_name", keep="first")
 
             # Convert the most recent price record for each product into a JSON object
             most_recent_json = [
                 {
-                    "product_id": row["product_id"],
+                    "product_id": row["product_name"],
                     "price": row["price"],
                     "change_percentage": row["change_percentage"],
                     "date": row["date"].strftime('%Y-%m-%d'),  # Format the date as a string
@@ -117,7 +118,7 @@ class MarketChangesProcessor:
                 for _, row in most_recent_price.iterrows()
             ]
             
-            return json.dumps(most_recent_json, indent=4)  # Return the JSON as a formatted string
+            return most_recent_json  # Return the JSON as a formatted string
         except Exception as e:
             print(f"Unexpected error: {e}")
-            return json.dumps([])  # Return an empty JSON array in case of an error
+            return {[]}  # Return an empty JSON array in case of an error

@@ -38,6 +38,8 @@ vesper_processor = VesperDataProcessor(db_connection=db_connection)
 # # Retrieve the most recent market changes info using the class
 # market_changes_info = market_changes_processor.get_full_market_changes_info(2831)
 
+market_news = MarketNewsSummary(db_connection, os.getenv("OPENAI_API_KEY"))
+
 
 @app.get("/")
 def read_root():
@@ -47,12 +49,9 @@ def read_root():
 @app.get("/generate-summary")
 def generate_summary(user_id: int, number: int, days_threshold: int):
     # Initialize the MarketNewsSummary class
-    market_news = MarketNewsSummary(
-        db_connection, user_id, number, days_threshold, os.getenv("OPENAI_API_KEY")
-    )
 
     # Generate the HTML summary
-    html_summary = market_news.generate_summary()
+    html_summary = market_news.generate_summary(user_id, number, days_threshold)
 
     # Return the summary
     return {"html_summary": html_summary}
